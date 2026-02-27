@@ -1,0 +1,111 @@
+<div class="min-h-screen flex items-center justify-center bg-gray-50 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg border border-gray-100">
+    
+    <div class="text-center">
+      <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Sign up</h1>
+      <p class="mt-2 text-sm text-gray-600">
+      </p>
+    </div>
+
+    @if (errors().length > 0) {
+      <div class="rounded-md bg-red-50 p-4 border-l-4 border-red-500" role="alert">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-red-800">There were errors with your submission</h3>
+            <ul class="mt-2 text-sm text-red-700 list-disc list-inside">
+              @for (error of errors(); track error) {
+                <li>{{ error }}</li>
+              }
+            </ul>
+          </div>
+        </div>
+      </div>
+    }
+
+    <form class="mt-8 space-y-6" [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+      <div class="space-y-4">
+        <div>
+          <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+          <div class="mt-1 relative rounded-md shadow-sm">
+            <input
+              id="username"
+              type="username"
+              formControlName="username"
+              required
+              class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-all"
+              [class.border-red-300]="registerForm.controls.username.invalid && registerForm.controls.username.touched"
+            />
+          </div>
+          @if (registerForm.controls.email.invalid && registerForm.controls.email.touched) {
+            <p class="mt-1 text-sm text-red-600">Please provide a valid email.</p>
+          }
+        </div>
+
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-700">Email address</label>
+          <div class="mt-1 relative rounded-md shadow-sm">
+            <input
+              id="email"
+              type="email"
+              formControlName="email"
+              required
+              class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-all"
+              [class.border-red-300]="registerForm.controls.email.invalid && registerForm.controls.email.touched"
+            />
+          </div>
+          @if (registerForm.controls.email.invalid && registerForm.controls.email.touched) {
+            <p class="mt-1 text-sm text-red-600">Please provide a valid email.</p>
+          }
+        </div>
+
+        <div>
+          <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+          <div class="mt-1 relative rounded-md shadow-sm">
+            <input
+              id="password"
+              type="password"
+              formControlName="password"
+              required
+              class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-all"
+            />
+          </div>
+        </div>
+        <div>
+          <label for="passwordConfirmation" class="block text-sm font-medium text-gray-700">Password confirmation</label>
+          <div class="mt-1 relative rounded-md shadow-sm">
+            <input
+              id="passwordConfirmation"
+              type="password"
+              formControlName="passwordConfirmation"
+              required
+              class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-all"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <button
+          type="submit"
+          [disabled]="registerForm.invalid || isSubmitting()"
+          class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md"
+        >
+          @if (isSubmitting()) {
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Signing in...
+          } @else {
+            Sign up
+          }
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

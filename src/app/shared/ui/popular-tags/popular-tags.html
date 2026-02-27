@@ -1,0 +1,8 @@
+@for (tag of tags(); track $index) {
+    <a 
+      href="#" 
+      (click)="$event.preventDefault(); tagSelected.emit(tag)"
+      class="bg-gray-600 hover:bg-gray-700 text-white text-xs px-2 py-1 rounded-full transition-colors">
+        {{ tag }}
+    </a>
+}

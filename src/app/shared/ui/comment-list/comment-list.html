@@ -1,0 +1,93 @@
+<div class="space-y-4 max-w-3xl mx-auto mt-8">
+
+  @if (user(); as currentUser) {
+    <form class="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm mb-8">
+      <div class="p-0">
+        <textarea 
+          [formControl]="commentControl"
+          class="w-full p-6 text-gray-800 leading-relaxed font-source-serif focus:outline-none focus:bg-gray-50 transition-colors resize-y h-32"
+          placeholder="Write a comment..."
+          [disabled]="isSubmitting()"
+        ></textarea>
+      </div>
+      
+      <div class="bg-gray-50 px-6 py-3 border-t border-gray-200 flex items-center justify-between">
+        <img 
+          [src]="currentUser.image || 'assets/images/avatar.png'" 
+          class="h-8 w-8 rounded-full object-cover" 
+          [alt]="currentUser.username"
+        >
+        <button 
+          type="button"
+          (click)="addComment()"
+          [disabled]="commentControl.invalid || isSubmitting()"
+          class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1 px-4 rounded text-sm disabled:opacity-50 transition-colors"
+        >
+          Post Comment
+        </button>
+      </div>
+    </form>
+  } @else {
+    <div class="bg-gray-50 py-4 mb-8 text-center rounded border border-gray-200">
+      <p class="text-gray-600">
+          <a routerLink="/login" class="text-emerald-600 hover:underline">Sign in</a> 
+          or 
+          <a routerLink="/register" class="text-emerald-600 hover:underline">sign up</a> 
+          to add comments on this article.
+      </p>
+    </div>
+  }
+  
+  @for (comment of comments(); track comment.id) {
+    <div class="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
+      
+      <div class="p-6">
+        <p class="text-gray-800 leading-relaxed font-source-serif whitespace-pre-wrap">
+          {{ comment.body }}
+        </p>
+      </div>
+
+      <div class="bg-gray-50 px-6 py-3 border-t border-gray-200 flex items-center justify-between">
+        
+        <div class="flex items-center gap-2">
+          <a [routerLink]="['/profile', comment.author.username]" class="flex-shrink-0">
+            <img 
+              [src]="comment.author.image || 'assets/images/avatar.png'" 
+              class="h-5 w-5 rounded-full object-cover" 
+              [alt]="comment.author.username"
+            >
+          </a>
+
+          <a 
+            [routerLink]="['/profile', comment.author.username]" 
+            class="text-sm font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
+          >
+            {{ comment.author.username }}
+          </a>
+
+          <span class="text-xs text-gray-400">
+            {{ comment.createdAt | date:'mediumDate' }}
+          </span>
+        </div>
+
+        @if (user()?.username === comment.author.username) {
+          <button 
+            (click)="deleteComment(comment.id)"
+            class="text-gray-400 hover:text-red-600 transition-colors"
+            title="Delete comment"
+          >
+            <i class="ion-trash-a"></i>
+          </button>
+        }
+
+      </div>
+    </div>
+  } @empty {
+    @if(user()) {
+      <div class="text-center py-8 text-gray-500">
+        <p>No comments yet...</p>
+      </div>
+    }
+  }
+
+</div>

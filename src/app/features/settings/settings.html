@@ -1,0 +1,68 @@
+<div class="settings-page py-8">
+  <div class="container mx-auto px-4">
+    <div class="flex justify-center">
+      <div class="w-full md:w-1/2">
+        
+        <h1 class="text-4xl text-center font-medium text-gray-800 mb-8 font-titillium">
+          Settings
+        </h1>
+
+        <form [formGroup]="userForm" (ngSubmit)="onSubmit()">
+          <fieldset [disabled]="isSubmitting()">
+            
+            <div class="mb-6 flex flex-col items-center gap-4">
+              <div class="relative h-40 w-40">
+                <img 
+                  [src]="imagePreview() || 'assets/images/avatar.png'" 
+                  class="h-40 w-40 rounded-full object-cover border border-gray-300 shadow-sm"
+                  alt="Profile Preview"
+                >
+              </div>
+
+              <div class="w-full">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Profile Picture</label>
+                <input 
+                  type="file" 
+                  (change)="onFileSelected($event)"
+                  accept="image/*"
+                  class="block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-emerald-50 file:text-emerald-700
+                    hover:file:bg-emerald-100
+                    cursor-pointer"
+                />
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <input 
+                class="w-full border border-gray-300 rounded px-4 py-3 text-xl text-gray-600 focus:outline-none focus:border-emerald-500" 
+                type="email" 
+                placeholder="Email"
+                formControlName="email">
+            </div>
+
+            <div class="mb-4">
+              <textarea 
+                class="w-full border border-gray-300 rounded px-4 py-3 text-gray-600 focus:outline-none focus:border-emerald-500 h-32 resize-y" 
+                rows="8" 
+                placeholder="Short bio about you"
+                formControlName="bio"></textarea>
+            </div>
+
+            <div class="flex justify-end pb-4 border-b border-gray-200">
+              <button 
+                type="submit"
+                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded text-lg disabled:opacity-50 transition-colors">
+                Update profile
+              </button>
+            </div>
+          </fieldset>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>

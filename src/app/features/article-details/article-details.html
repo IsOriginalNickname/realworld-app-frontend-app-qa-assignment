@@ -1,0 +1,105 @@
+@if (isLoading() && !article()) {
+  <div class="min-h-screen flex items-center justify-center">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
+  </div>
+} @else if (article(); as articleData) {
+  
+  <div class="article-page">
+    <div class="bg-gray-900 text-white py-12 shadow-inner mb-8">
+      <div class="container mx-auto px-4 max-w-4xl">
+        
+        <div class="flex items-start justify-between gap-4 mb-8">
+          <h1 class="text-4xl md:text-5xl font-bold font-titillium tracking-tight drop-shadow-md">
+            {{ articleData.title }}
+          </h1>
+
+          @if (currentUser()?.username !== articleData.author!.username) {
+            <button 
+              (click)="toggleFavorite()"
+              class="flex-shrink-0 border px-3 py-1 rounded text-sm transition-colors flex items-center gap-1"
+              [ngClass]="{
+                'bg-emerald-600 border-emerald-600 text-white hover:bg-emerald-700': articleData.favorited,
+                'border-emerald-500 text-emerald-500 hover:bg-emerald-600 hover:text-white': !articleData.favorited
+              }"
+            >
+              <i class="ion-heart"></i>
+              <span>
+                <span class="ml-1">{{ articleData.favoritesCount }}</span>
+              </span>
+            </button>
+          }
+        </div>
+
+        <div class="flex items-center gap-3">
+          <a [routerLink]="['/profile', articleData.author!.username]">
+            <img 
+              [src]="articleData.author!.image || 'assets/images/avatar.png'" 
+              class="h-8 w-8 rounded-full object-cover bg-gray-700" 
+              [alt]="articleData.author!.username"
+            >
+          </a>
+          
+          <div class="flex flex-col text-sm leading-4 mr-4">
+            <a 
+              [routerLink]="['/profile', articleData.author!.username]" 
+              class="font-medium hover:text-emerald-400 hover:underline transition-colors text-white"
+            >
+              {{ articleData.author!.username }}
+            </a>
+            <span class="text-gray-400 font-light">
+              {{ articleData.createdAt | date:'longDate' }}
+            </span>
+          </div>
+
+          @if(currentUser()?.username === articleData.author!.username) {
+            <div class="flex gap-2">
+              <button 
+                (click)="editArticle()"
+                class="text-sm px-2 py-1 border border-gray-400 text-gray-400 rounded hover:bg-gray-700 hover:text-white transition-colors flex items-center gap-1">
+                <i class="ion-edit"></i> Edit
+              </button>
+
+              <button 
+                (click)="deleteArticle()"
+                class="text-sm px-2 py-1 border border-red-500 text-red-500 rounded hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1">
+                <i class="ion-trash-a"></i> Delete
+              </button>
+            </div>
+          } @else {
+            <button 
+              (click)="toggleFollow()"
+              [class.bg-gray-400]="article()?.author!.following"
+              [class.text-white]="article()?.author!.following"
+              [class.border-gray-400]="!article()?.author!.following"
+              class="border border-gray-400 text-gray-500 hover:bg-gray-200 px-3 py-1 rounded text-sm flex items-center gap-1 transition-colors"
+            >
+              <i [class]="articleData.author!.following ? 'ion-minus-round' : 'ion-plus-round'"></i>
+              {{ articleData.author!.following ? 'Unfollow' : 'Follow' }} 
+              {{ articleData.author!.username }}
+            </button>
+          }
+          
+        </div>
+
+      </div>
+    </div>
+
+    <div class="container mx-auto px-4 max-w-4xl">
+      <div class="text-lg text-gray-800 leading-relaxed font-source-serif mb-12 whitespace-pre-wrap border-b border-gray-200 pb-12">
+        {{ articleData.body }}
+      </div>
+
+      @if (articleData.tagList.length > 0) {
+        <ul class="flex flex-wrap gap-2 mb-12">
+          @for (tag of articleData.tagList; track tag) {
+            <li class="border border-gray-300 text-gray-500 text-sm px-3 py-1 rounded-full cursor-default hover:border-gray-400 transition-colors">
+              {{ tag }}
+            </li>
+          }
+        </ul>
+      }
+
+      <app-comment-list [article]="articleData" />
+    </div>
+  </div>
+}

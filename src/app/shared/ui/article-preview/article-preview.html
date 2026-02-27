@@ -1,0 +1,79 @@
+<div class="border-b border-gray-200 p-6">
+  <div class="mb-4 flex justify-between items-start">
+    <div class="flex items-center">
+      <a [routerLink]="['/profile', article().author!.username]">
+        @if (article().author!.image) {
+          <img 
+            [ngSrc]="article().author!.image" 
+            width="32" 
+            height="32" 
+            class="rounded-full mr-2 object-cover bg-gray-200" 
+            [alt]="article().author!.username" 
+          />
+        } @else {
+          <img 
+            ngSrc="assets/images/avatar.png" 
+            width="32" 
+            height="32" 
+            class="rounded-full mr-2 object-cover bg-gray-200" 
+            alt="Default avatar" 
+          />
+        }
+      </a>
+
+      <div class="flex flex-col leading-4">
+        <a [routerLink]="['/profile', article().author!.username]" class="font-medium text-emerald-600 hover:text-emerald-700 hover:underline">
+          {{ article().author!.username }}
+        </a>
+        <span class="text-xs text-gray-400 font-light">
+          {{ article().createdAt | date:'longDate' }}
+        </span>
+      </div>
+    </div>
+
+    <button 
+      class="text-sm border border-emerald-500 rounded px-2 py-1 transition-colors flex items-center gap-1"
+      [class.bg-emerald-500]="article().favorited"
+      [class.text-white]="article().favorited"
+      [class.text-emerald-500]="!article().favorited"
+      [class.hover:bg-emerald-600]="article().favorited"
+      [class.hover:text-white]="!article().favorited"
+      [class.hover:bg-emerald-500]="!article().favorited"
+      (click)="isAuthenticated() ? toggleFavorite.emit(article()) : rerouteToLogin()"
+      [attr.aria-label]="'Toggle favorite (' + article().favoritesCount + ')'">
+      <i class="ion-heart"></i> 
+      <span>{{ article().favoritesCount }}</span>
+    </button>
+  </div>
+
+  <a [routerLink]="['/article', article().slug]" class="block group mb-4">
+    <h1 class="font-bold text-2xl text-gray-900 mb-1 group-hover:text-gray-600 transition-colors">
+      {{ article().title }}
+    </h1>
+    <p class="font-light text-gray-400 text-base mb-4 leading-6">
+      {{ article().description }}
+    </p>
+    
+    <div class="flex justify-between items-center mt-4">
+      <a
+        [routerLink]=""
+        class="
+          text-xs 
+          text-gray-300 
+          font-light 
+          group-hover:text-gray-400
+        "
+      >
+        Read more...
+      </a>
+
+      <ul class="flex gap-1 flex-wrap justify-end">
+        @for (tag of article().tagList; track tag) {
+          <li class="border border-gray-300 text-gray-400 text-[0.8rem] px-2 py-[0.1rem] rounded-full">
+            {{ tag }}
+          </li>
+        }
+      </ul>
+    </div>
+  </a>
+</div>

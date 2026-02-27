@@ -1,0 +1,113 @@
+@if (profile(); as p) {
+  <div class="profile-page">
+
+    <div class="bg-gray-100 py-8 mb-8">
+      <div class="container mx-auto px-4">
+        <div class="flex flex-col items-center justify-center text-center">
+          
+          <img 
+            [src]="p.image || 'assets/images/avatar.png'" 
+            class="h-24 w-24 rounded-full mb-4 object-cover bg-gray-200"
+            [alt]="p.username"
+          >
+          
+          <h4 class="font-bold text-2xl text-gray-800 mb-2">{{ p.username }}</h4>
+          
+          @if (p.bio) {
+            <p class="text-gray-500 mb-4 max-w">{{ p.bio }}</p>
+          }
+
+          <div class="flex justify-center w-full max-w mt-2">
+            
+            @if (isCurrentUser()) {
+              <a 
+                routerLink="/settings"
+                class="border border-gray-400 text-gray-500 hover:bg-gray-200 px-3 py-1 rounded text-sm flex items-center gap-1 transition-colors">
+                <i class="ion-gear-a"></i> Edit Profile Settings
+              </a>
+            } @else if(isLoggedIn()) {
+              <button 
+                (click)="toggleFollow()"
+                [class.bg-gray-400]="p.following"
+                [class.text-white]="p.following"
+                [class.border-gray-400]="!p.following"
+                class="border border-gray-400 text-gray-500 hover:bg-gray-200 px-3 py-1 rounded text-sm flex items-center gap-1 transition-colors">
+                
+                <i [class]="p.following ? 'ion-minus-round' : 'ion-plus-round'"></i>
+                {{ p.following ? 'Unfollow' : 'Follow' }} {{ p.username }}
+              </button>
+            }
+
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    @if(isCurrentUser()) {
+      <div class="container mx-auto px-4">
+        <div class="flex flex-col md:flex-row">
+          
+          <div class="w-full md:w-3/4 mx-auto">
+            
+            <div class="border-b border-gray-200 mb-6">
+              <ul class="flex gap-6">
+                <li class="pb-2 cursor-pointer transition-colors"
+                    [ngClass]="{'border-b-2 border-emerald-500 text-emerald-600': currentTab() === 'my', 'text-gray-400 hover:text-gray-600': currentTab() !== 'my'}"
+                    (click)="setTab('my')">
+                  My Articles 
+                <li class="pb-2 cursor-pointer transition-colors"
+                    [ngClass]="{'border-b-2 border-emerald-500 text-emerald-600': currentTab() === 'favorites', 'text-gray-400 hover:text-gray-600': currentTab() !== 'favorites'}"
+                    (click)="setTab('favorites')">
+                  Favorited Articles
+                </li>
+              </ul>
+            </div>
+
+            @for (article of articles(); track article.slug) {
+              <app-article-preview 
+                [article]="article" 
+                (toggleFavorite)="toggleFavorite($event)" 
+              />
+            } @empty {
+              <div class="p-4 text-gray-500">No articles are here... yet.</div>
+            }
+
+          </div>
+        </div>
+      </div>
+    }
+    @else {
+      <div class="container mx-auto px-4">
+        <div class="flex flex-col md:flex-row">
+          
+          <div class="w-full md:w-3/4 mx-auto">
+            
+            <div class="border-b border-gray-200 mb-6">
+              <ul class="flex gap-6">
+                <li class="pb-2 cursor-pointer transition-colors"
+                    [ngClass]="{'border-b-2 border-emerald-500 text-emerald-600': currentTab() === 'my', 'text-gray-400 hover:text-gray-600': currentTab() !== 'my'}"
+                    (click)="setTab('my')">
+                  {{ profile()?.username }}`s articles 
+              </ul>
+            </div>
+
+            @for (article of articles(); track article.slug) {
+              <app-article-preview 
+                [article]="article" 
+                (toggleFavorite)="toggleFavorite($event)" 
+              />
+            } @empty {
+              <div class="p-4 text-gray-500">No articles are here... yet.</div>
+            }
+
+          </div>
+        </div>
+      </div>
+    }
+    
+
+  </div>
+}
+@else {
+  Loading...
+}

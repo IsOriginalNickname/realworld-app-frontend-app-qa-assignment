@@ -1,0 +1,68 @@
+<div class="editor-page py-8">
+  <div class="container mx-auto px-4">
+    <div class="flex justify-center">
+      <div class="w-full md:w-5/6 lg:w-3/4 xl:w-2/3">
+
+        @if (errors().length > 0) {
+          <ul class="mb-6 list-disc list-inside text-red-600 border border-red-200 bg-red-50 p-4 rounded-md shadow-sm">
+            @for (error of errors(); track error) {
+              <li class="text-sm font-medium">{{ error }}</li>
+            }
+          </ul>
+        }
+
+        <form [formGroup]="articleForm" (ngSubmit)="onSubmit()">
+          <fieldset [disabled]="isSubmitting()">
+
+            <div class="mb-4">
+              <input
+                type="text"
+                class="w-full border border-gray-300 rounded-md px-5 py-3 text-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                placeholder="Article Title"
+                formControlName="title"
+              />
+            </div>
+
+            <div class="mb-4">
+              <input
+                type="text"
+                class="w-full border border-gray-300 rounded-md px-4 py-2 text-base text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                placeholder="What's this article about?"
+                formControlName="description"
+              />
+            </div>
+
+            <div class="mb-4">
+              <textarea
+                class="w-full border border-gray-300 rounded-md px-4 py-3 text-base text-gray-700 font-source-serif placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors h-64 resize-y"
+                rows="8"
+                placeholder="Write your article (in markdown)"
+                formControlName="body"
+              ></textarea>
+            </div>
+
+            <div class="mb-6">
+              <input
+                type="text"
+                class="w-full border border-gray-300 rounded-md px-4 py-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                placeholder="Enter tags (separated by spaces)"
+                formControlName="tagList"
+              />
+            </div>
+
+            <div class="flex justify-end">
+              <button
+                type="submit"
+                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Publish Article
+              </button>
+            </div>
+
+          </fieldset>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>

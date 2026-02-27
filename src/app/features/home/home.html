@@ -1,0 +1,94 @@
+<div class="home-page">
+
+  <div class="container mx-auto px-4 page">
+    <div class="flex flex-wrap -mx-4">
+      
+      <div class="w-full md:w-3/4 px-4">
+        
+        <div class="mb-6 border-b border-gray-200">
+          <ul class="flex list-none pl-0 mb-0">
+
+            <li class="nav-item">
+              <button 
+                (click)="setFeedType('global')"
+                class="block py-2 px-4 focus:outline-none transition-colors border-b-2"
+                [class.text-emerald-500]="feedType() === 'global'" 
+                [class.border-emerald-500]="feedType() === 'global'"
+                [class.text-gray-400]="feedType() !== 'global'"
+                [class.border-transparent]="feedType() !== 'global'"
+                [class.hover:text-gray-600]="feedType() !== 'global'"
+              >
+                Global Feed
+              </button>
+            </li>
+
+            @if (authService.currentUser()) {
+              <li class="nav-item">
+                <button 
+                  (click)="setFeedType('feed')"
+                  class="block py-2 px-4 focus:outline-none transition-colors border-b-2"
+                  [class.text-emerald-500]="feedType() === 'feed'" 
+                  [class.border-emerald-500]="feedType() === 'feed'"
+                  [class.text-gray-400]="feedType() !== 'feed'"
+                  [class.border-transparent]="feedType() !== 'feed'"
+                  [class.hover:text-gray-600]="feedType() !== 'feed'"
+                >
+                  Your Feed
+                </button>
+              </li>
+            }
+
+          </ul>
+        </div>
+
+        @if (isLoading()) {
+          <div class="p-4 text-gray-500">Loading articles...</div>
+        } @else {
+          @for (article of articles(); track article.slug) {
+            <app-article-preview 
+              [article]="article" 
+              (toggleFavorite)="toggleFavorite($event)" 
+            />
+          } @empty {
+            <div class="p-4 text-gray-500">
+              @if(feedType() === 'feed') {
+                No articles yet... Follow some authors to see their posts here!
+              } @else {
+                No articles found.
+              }
+            </div>
+          }
+
+          @if (totalPages().length > 1) {
+            <nav class="mt-4">
+              <ul class="flex flex-wrap pl-0 list-none rounded gap-1">
+                @for (page of totalPages(); track page) {
+                  <li>
+                    <button 
+                      class="relative block py-2 px-3 leading-tight border border-gray-300 hover:bg-gray-100 hover:underline transition-colors text-sm"
+                      [class.bg-emerald-500]="currentPage() === page"
+                      [class.text-white]="currentPage() === page"
+                      [class.text-emerald-500]="currentPage() !== page"
+                      [class.border-emerald-500]="currentPage() === page"
+                      (click)="setPage(page)">
+                      {{ page }}
+                    </button>
+                  </li>
+                }
+              </ul>
+            </nav>
+          }
+        }
+      </div>
+
+      <div class="w-full md:w-1/4 px-4">
+        <div class="bg-gray-100 p-3 rounded">
+            <p class="mb-2 text-sm font-medium text-gray-700">Popular Tags</p>
+            <div class="flex flex-wrap gap-1">
+              <app-popular-tags (tagSelected)="onTagSelected($event)" />
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
