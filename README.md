@@ -33,6 +33,14 @@ This fork was created to demonstrate working with AI tools and how this process 
 - While extracting requirements, we had two sources: a Markdown spec and an OpenAPI JSON. On the first iteration, Claude Code decided they were identical and merged them, almost completely overwriting the `.md` spec file.
 - On the second iteration, when asked to identify the differences, it discovered that several things between the OpenAPI spec and the Markdown spec did not match at all.
 
+### What would I also like to do in the future?
+- First of all, deliver this project in Docker to make setup simpler and faster.
+- Run the backend locally in a container alongside the app. The publicly available API (`https://api.realworld.show/api`) has very low rate limits, which causes tests to fail and leads to flaky tests. As a temporary workaround, I reduced the number of workers and added retries, which is a extreamly bad practice.
+- In a real project, I would invest time in prompt evaluation with a large set of prepared demo data to find the most reliable prompt for generating test scenarios for each endpoint.
+- Create a Page Object Model for UI tests.
+- Create uniq data-id properties for all UI element which are used in tests and migrate to them from "Role" locators. 
+- Separate the data layer for API tests and move all JSON payloads out of the test files.
+
 ---
 ### CodeGrader
 
@@ -75,16 +83,6 @@ A dynamic test-quality validator that runs automatically via **PostToolUse hook*
 **Goal:** `✅ Mutation score: 100%` — every applicable mutation must be caught by an assertion.
 
 ---
-
-
-### What would I also like to do in the future?
-- First of all, deliver this project in Docker to make setup simpler and faster.
-- Run the backend locally in a container alongside the app. The publicly available API (`https://api.realworld.show/api`) has very low rate limits, which causes tests to fail and leads to flaky tests. As a temporary workaround, I reduced the number of workers and added retries — which is a bad practice.
-- In a real project, I would invest time in prompt evaluation with a large set of prepared demo data to find the most reliable prompt for generating test scenarios for each endpoint.
-- Create a Page Object Model for UI tests.
-- Separate the data layer for API tests and move all JSON payloads out of the test files.
-
-
 
 ## Prerequisites
 

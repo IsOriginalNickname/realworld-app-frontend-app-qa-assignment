@@ -58,10 +58,30 @@ export async function favoriteArticle(token: string, slug: string): Promise<void
   });
 }
 
+export async function unfavoriteArticle(token: string, slug: string): Promise<void> {
+  await fetch(`${API_BASE}/articles/${slug}/favorite`, {
+    method: 'DELETE',
+    headers: { Authorization: `Token ${token}` },
+  });
+}
+
+export async function getGlobalFeedArticle(
+  token?: string,
+): Promise<{ slug: string; title: string }> {
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Token ${token}`;
+  const res = await fetch(`${API_BASE}/articles?limit=1`, { headers });
+  const body = await res.json();
+  const article = body.articles?.[0];
+  if (!article) throw new Error('No articles found in Global Feed');
+  return { slug: article.slug, title: article.title };
+}
+
 export async function loginViaUI(page: Page, email: string, password: string): Promise<void> {
   await page.goto('/login');
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL('/');
+  // Allow up to 15 seconds for redirect in case of slow API responses under parallel load
+  await expect(page).toHaveURL('/', { timeout: 15000 });
 }

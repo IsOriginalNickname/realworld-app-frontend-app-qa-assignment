@@ -117,6 +117,55 @@
 
 ---
 
+### BUG-012 — Opening /settings triggers spurious GET /api/user/edit request
+
+| | |
+|---|---|
+| **Endpoint** | `GET /api/user/edit` (should never be called) |
+| **Expected result** | Navigating to `/settings` calls `GET /api/user` to load the current user |
+| **Actual result** | App calls `GET /api/user/edit` — a non-existent endpoint — so the form loads empty |
+| **Test** | `tests/e2e/e2e-settings.spec.ts` → *"BUG regression: opening /settings must NOT trigger GET /api/user/edit request"* |
+| **Severity** | High |
+
+---
+
+### BUG-013 — "Update profile" button does not send PUT /api/user
+
+| | |
+|---|---|
+| **Endpoint** | `PUT /api/user` |
+| **Expected result** | Clicking "Update profile" sends `PUT /api/user` with the updated values and receives `200 OK` |
+| **Actual result** | No request is sent — changes are silently discarded |
+| **Test** | `tests/e2e/e2e-settings.spec.ts` → *"BUG regression: clicking Update Settings button saves changes via PUT /api/user"* |
+| **Severity** | Critical |
+
+---
+
+### BUG-014 — Unauthenticated user clicking a favorite button is not redirected to /login
+
+| | |
+|---|---|
+| **Area** | Frontend navigation |
+| **Expected result** | Clicking the favorite button without being logged in redirects the user to `/login` |
+| **Actual result** | Redirect to `/login` does not happen |
+| **Test** | `tests/e2e/e2e-favorites.spec.ts` → *"Unauthenticated user clicking the favorite button is redirected to login or shown disabled state"* |
+| **Severity** | High |
+
+---
+
+### BUG-015 — Favorites counter updates optimistically on the frontend with incorrect contract
+
+| | |
+|---|---|
+| **Area** | Frontend / Favorites |
+| **Expected result** | After clicking favorite, the UI reflects the `favoritesCount` value returned by `POST /api/articles/{slug}/favorite` |
+| **Actual result** | The counter increments optimistically on the frontend but diverges from the API response (frontend manifestation of BUG-010) |
+| **Test** | `tests/e2e/e2e-favorites.spec.ts` → *"BUG-010 regression: two users favoriting the same article — favoritesCount must reach 2"* |
+| **Severity** | High |
+| **Note** | Related to BUG-010: the API returns wrong `favoritesCount`, and the UI surfaces that incorrect value |
+
+---
+
 ### BUG-010 — favoritesCount is not incremented when multiple users favorite the same article
 
 | | |
