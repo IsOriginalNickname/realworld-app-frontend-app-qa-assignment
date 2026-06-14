@@ -1,0 +1,17 @@
+{
+  "enableAllProjectMcpServers": true,
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'FILE=\"$CLAUDE_TOOL_INPUT_FILE_PATH\"; if [[ \"$FILE\" == *.spec.ts ]]; then npx ts-node .claude/grader.ts \"$FILE\" && npx ts-node .claude/mutation-runner.ts \"$FILE\"; fi'",
+            "blocking": true
+          }
+        ]
+      }
+    ]
+  }
+}
