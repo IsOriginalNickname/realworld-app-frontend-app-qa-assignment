@@ -23,14 +23,33 @@ Before writing a test:
 
 ---
 
-## Required Structure for Every Test
+## Required Structure 
 
+Follow test filenames:
+Use [api](tests/api) as directory for API tests.
+Use [e2e](tests/e2e) as directory for E2E tests
+
+Use feature name in spec.ts files naming for API
+<spec_file_naming_example>
+api-authentication.spec.ts
+api-user.spec.ts
+api-articles.spec.ts
+<spec_file_naming_example>
+
+### File Responsibilities
+
+- **`.spec.ts` files** — contain ONLY `test(...)` calls. No helper functions, no utility logic, no `const` builders defined at module level.
+- **`helpers.ts` / `utils.ts`** — place all reusable logic here, co-located next to the spec files that use them (e.g. `tests/api/helpers.ts`).
+
+Anything that is not a `test()` block must live in a helper or utils file and be imported into the spec.
+
+
+Follow test structure:
 <test_file_example>
-
 ```typescript
 import {test, expect} from '@playwright/test';
 
-test('Scenario description from **- checklist.md', {
+test('Scenario description', {
   annotation: [
     {type: 'feature', description: '<feature from checklist.md>'},
     {type: 'type', description: 'positive'}, // or 'negative'
@@ -56,7 +75,6 @@ test('Scenario description from **- checklist.md', {
   expect(body.created_at).toBe(originalCreatedAt);
 });
 ```
-
 </test_file_example>
 
 ---
@@ -83,16 +101,15 @@ test('Scenario description from **- checklist.md', {
 
 ### Tags
 
-- Minimum: `@<featureName>` + `@positive` or `@negative`
+- Minimum: `@<featureName>` and `@positive` OR `@negative`) and `@smoke` OR `@regression`,
 - Add as appropriate: `@smoke`, `@regression`, `@edge`, `@critical`
 
 ### Annotations
-
 - `feature` — feature name. One of from list ("Authentication", "Registration", "User","Profiles","Articles","Comments","Favorites","Feed","Tags")
 - `type` — strictly `positive` or `negative`
 - `severity` — based on importance from `checklist.md`
 - `check` — check text from `checklist.md`
-  </rules>
+</rules>
 
 ---
 
