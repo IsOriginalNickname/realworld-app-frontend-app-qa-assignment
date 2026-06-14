@@ -15,6 +15,7 @@ This fork was created to demonstrate working with AI tools and how this process 
     - planning
     - codegen
     - healing
+  - Playwright MCP for planning agent.
   - Kiro for helping with test case coverage.
   - Self-written tools:
     - PostHook for code quality assessment for API tests — runs the code-grader and mutation runner after each `.spec` file change.
@@ -22,16 +23,16 @@ This fork was created to demonstrate working with AI tools and how this process 
     - Self-written mutation runner.
 
 ### Where did the agent help, and where did it produce something wrong or low-quality that you had to correct or reject?
-  **Pros:**
-  -
-  **Cons:**
-  - By default, regular Claude Code codegen with some rules in the prompt produced poor results, and the Playwright agent wasn’t great either (both are more oriented toward UI tests). This was expected.
-  - **Solution:** A code-grader was added.
+
+  - As usual, the biggest problem (after finding a working front-end repo to fork :)) was getting stable and good-quality codegen. Claude Code with some rules in the prompt produced poor results, and the Playwright agent wasn't great either (Playwright agent is oriented toward UI tests, so it doesn't handle E2E API testing as well). This was expected.
+**Solution:** First, a code-grader was added. This follow Antropic recommendations for improving the quality of the generated code.
+  - Second, [CLAUDE.md](CLAUDE.md) was updated a few times for getting better results.
+  - Third, Test example was added to the [CLAUDE.md](CLAUDE.md). Following Anthropic's recommendations too.
+
 
 ### One example of a decision where you overrode the agent’s suggestion, and why.
-- When I asked it to generate fixtures for API tests, it moved all URLs inside them.
-- While extracting requirements, we had two sources: a Markdown spec and an OpenAPI JSON. On the first iteration, Claude Code decided they were identical and merged them, almost completely overwriting the `.md` spec file.
-- On the second iteration, when asked to identify the differences, it discovered that several things between the OpenAPI spec and the Markdown spec did not match at all.
+- When I asked it to generate fixtures for API tests, it moved all URLs inside them. Was canceled. Wrong behavior. We must contains it in [playwright.config.ts](playwright.config.ts)
+- While extracting requirements, we had two sources: a Markdown spec and an OpenAPI JSON. On the first iteration, Claude Code decided they were identical and merged them, almost completely overwriting the `.md` spec file. It was suspicious. This changes were canceled. On the second iteration, when asked to identify the differences, it discovered that several things between the OpenAPI spec and the Markdown spec did not match at all.
 
 ### What would I also like to do in the future?
 - First of all, deliver this project in Docker to make setup simpler and faster.
@@ -41,6 +42,10 @@ This fork was created to demonstrate working with AI tools and how this process 
 - Create uniq data-id properties for all UI element which are used in tests and migrate to them from "Role" locators. 
 - Separate the data layer for API tests and move all JSON payloads out of the test files.
 
+---
+### Bugs
+List of found bugs u can find here:
+[bugs.md](docs/specs/other/bugs.md)
 ---
 ### CodeGrader
 
