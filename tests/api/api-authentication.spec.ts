@@ -1,17 +1,5 @@
 import { test, expect } from '@playwright/test';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function randomUser() {
-  const id = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-  return {
-    username: `user_${id}`,
-    email: `user_${id}@example.com`,
-    password: 'Password123!',
-  };
-}
+import { randomUser } from './helpers';
 
 // ---------------------------------------------------------------------------
 // Registration — POST /api/users

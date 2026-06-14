@@ -1,51 +1,5 @@
 import { test, expect } from '@playwright/test';
-
-// Base URL: https://api.realworld.show/api  (openapi.json servers[0].url)
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function randomUser() {
-  const id = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-  return {
-    username: `user_${id}`,
-    email: `user_${id}@example.com`,
-    password: 'Password123!',
-  };
-}
-
-function randomArticle(overrides: Record<string, unknown> = {}) {
-  const id = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-  return {
-    title: `Test Article ${id}`,
-    description: 'A test article description',
-    body: 'Test article body content',
-    tagList: [],
-    ...overrides,
-  };
-}
-
-async function registerAndGetToken(request: Parameters<typeof test>[2] extends never ? never : never): Promise<{ token: string; username: string }>;
-async function registerAndGetToken(request: any): Promise<{ token: string; username: string }> {
-  const user = randomUser();
-  const res = await request.post('/api/users', { data: { user } });
-  const body = await res.json();
-  return { token: body.user.token, username: body.user.username };
-}
-
-async function createArticle(request: any, token: string, overrides: Record<string, unknown> = {}) {
-  const article = randomArticle(overrides);
-  const res = await request.post('/api/articles', {
-    headers: { Authorization: `Token ${token}` },
-    data: { article },
-  });
-  return res;
-}
-
-// ---------------------------------------------------------------------------
-// Create Article — POST /api/articles
-// ---------------------------------------------------------------------------
+import { randomUser, randomArticle, registerAndGetToken, createArticle } from './helpers';
 
 test.describe('Articles — Create', () => {
   test('Create article with valid token returns 201', {
@@ -59,10 +13,9 @@ test.describe('Articles — Create', () => {
   }, async ({ request }) => {
     const { token } = await registerAndGetToken(request);
 
-    const res = await createArticle(request, token, {
-      title: `Unique Article ${Date.now()}`,
-      description: 'desc',
-      body: 'body',
+    const res = await request.post('/api/articles', {
+      headers: { Authorization: `Token ${token}` },
+      data: { article: randomArticle({ title: `Unique Article ${Date.now()}`, description: 'desc', body: 'body' }) },
     });
 
     expect(res.status()).toBe(201);
@@ -100,8 +53,10 @@ test.describe('Articles — Create', () => {
     tag: ['@articles', '@positive', '@smoke'],
   }, async ({ request }) => {
     const { token } = await registerAndGetToken(request);
-    const res = await createArticle(request, token, {
-      tagList: ['playwright', 'testing'],
+
+    const res = await request.post('/api/articles', {
+      headers: { Authorization: `Token ${token}` },
+      data: { article: randomArticle({ tagList: ['playwright', 'testing'] }) },
     });
 
     expect(res.status()).toBe(201);
@@ -123,7 +78,10 @@ test.describe('Articles — Create', () => {
   }, async ({ request }) => {
     const { token } = await registerAndGetToken(request);
 
-    const res = await createArticle(request, token, { tagList: null });
+    const res = await request.post('/api/articles', {
+      headers: { Authorization: `Token ${token}` },
+      data: { article: randomArticle({ tagList: null }) },
+    });
 
     expect(res.status()).toBe(201);
 
@@ -143,7 +101,10 @@ test.describe('Articles — Create', () => {
   }, async ({ request }) => {
     const { token } = await registerAndGetToken(request);
 
-    const res = await createArticle(request, token, { title: '' });
+    const res = await request.post('/api/articles', {
+      headers: { Authorization: `Token ${token}` },
+      data: { article: randomArticle({ title: '' }) },
+    });
 
     expect(res.status()).toBe(422);
 
@@ -163,7 +124,10 @@ test.describe('Articles — Create', () => {
   }, async ({ request }) => {
     const { token } = await registerAndGetToken(request);
 
-    const res = await createArticle(request, token, { title: null });
+    const res = await request.post('/api/articles', {
+      headers: { Authorization: `Token ${token}` },
+      data: { article: randomArticle({ title: null }) },
+    });
 
     expect(res.status()).toBe(422);
 
@@ -184,8 +148,14 @@ test.describe('Articles — Create', () => {
     const { token } = await registerAndGetToken(request);
     const title = `Duplicate Title ${Date.now()}`;
 
-    await createArticle(request, token, { title });
-    const res = await createArticle(request, token, { title });
+    await request.post('/api/articles', {
+      headers: { Authorization: `Token ${token}` },
+      data: { article: randomArticle({ title }) },
+    });
+    const res = await request.post('/api/articles', {
+      headers: { Authorization: `Token ${token}` },
+      data: { article: randomArticle({ title }) },
+    });
 
     expect([409, 422]).toContain(res.status());
 
@@ -204,7 +174,10 @@ test.describe('Articles — Create', () => {
   }, async ({ request }) => {
     const { token } = await registerAndGetToken(request);
 
-    const res = await createArticle(request, token, { title: 'A'.repeat(10000) });
+    const res = await request.post('/api/articles', {
+      headers: { Authorization: `Token ${token}` },
+      data: { article: randomArticle({ title: 'A'.repeat(10000) }) },
+    });
 
     expect(res.status()).toBeLessThan(500);
     expect(res.status()).toBeGreaterThanOrEqual(200);
@@ -222,7 +195,10 @@ test.describe('Articles — Create', () => {
     const { token } = await registerAndGetToken(request);
     const xssTitle = `<script>alert(1)</script> Article ${Date.now()}`;
 
-    const res = await createArticle(request, token, { title: xssTitle });
+    const res = await request.post('/api/articles', {
+      headers: { Authorization: `Token ${token}` },
+      data: { article: randomArticle({ title: xssTitle }) },
+    });
 
     // Must not crash the server
     expect(res.status()).toBeLessThan(500);
@@ -246,7 +222,10 @@ test.describe('Articles — Create', () => {
     const { token } = await registerAndGetToken(request);
     const unicodeTitle = `Статья с эмодзи 🚀 ${Date.now()}`;
 
-    const res = await createArticle(request, token, { title: unicodeTitle });
+    const res = await request.post('/api/articles', {
+      headers: { Authorization: `Token ${token}` },
+      data: { article: randomArticle({ title: unicodeTitle }) },
+    });
 
     expect(res.status()).toBe(201);
 
@@ -265,7 +244,10 @@ test.describe('Articles — Create', () => {
   }, async ({ request }) => {
     const { token } = await registerAndGetToken(request);
 
-    const res = await createArticle(request, token);
+    const res = await request.post('/api/articles', {
+      headers: { Authorization: `Token ${token}` },
+      data: { article: randomArticle() },
+    });
 
     expect(res.status()).toBe(201);
 
@@ -298,8 +280,7 @@ test.describe('Articles — Get Single', () => {
     tag: ['@articles', '@positive', '@smoke'],
   }, async ({ request }) => {
     const { token } = await registerAndGetToken(request);
-    const createRes = await createArticle(request, token);
-    const { article: created } = await createRes.json();
+    const created = await createArticle(request, token);
 
     const res = await request.get(`/api/articles/${created.slug}`, {
       headers: { Authorization: `Token ${token}` },
@@ -323,8 +304,7 @@ test.describe('Articles — Get Single', () => {
     tag: ['@articles', '@positive', '@regression'],
   }, async ({ request }) => {
     const { token } = await registerAndGetToken(request);
-    const createRes = await createArticle(request, token);
-    const { article: created } = await createRes.json();
+    const created = await createArticle(request, token);
 
     const res = await request.get(`/api/articles/${created.slug}`);
 
@@ -491,8 +471,7 @@ test.describe('Articles — List', () => {
     tag: ['@articles', '@positive', '@regression'],
   }, async ({ request }) => {
     const { token, username } = await registerAndGetToken(request);
-    const createRes = await createArticle(request, token);
-    const { article } = await createRes.json();
+    const article = await createArticle(request, token);
 
     // Favorite the article
     await request.post(`/api/articles/${article.slug}/favorite`, {
@@ -526,8 +505,7 @@ test.describe('Articles — Update', () => {
     tag: ['@articles', '@positive', '@smoke'],
   }, async ({ request }) => {
     const { token } = await registerAndGetToken(request);
-    const createRes = await createArticle(request, token);
-    const { article: created } = await createRes.json();
+    const created = await createArticle(request, token);
 
     const res = await request.put(`/api/articles/${created.slug}`, {
       headers: { Authorization: `Token ${token}` },
@@ -550,8 +528,7 @@ test.describe('Articles — Update', () => {
     tag: ['@articles', '@positive', '@regression'],
   }, async ({ request }) => {
     const { token } = await registerAndGetToken(request);
-    const createRes = await createArticle(request, token);
-    const { article: created } = await createRes.json();
+    const created = await createArticle(request, token);
 
     const newTitle = `Renamed Article ${Date.now()}`;
 
@@ -578,8 +555,7 @@ test.describe('Articles — Update', () => {
     tag: ['@articles', '@positive', '@regression'],
   }, async ({ request }) => {
     const { token } = await registerAndGetToken(request);
-    const createRes = await createArticle(request, token);
-    const { article: original } = await createRes.json();
+    const original = await createArticle(request, token);
 
     const res = await request.put(`/api/articles/${original.slug}`, {
       headers: { Authorization: `Token ${token}` },
@@ -606,8 +582,7 @@ test.describe('Articles — Update', () => {
     tag: ['@articles', '@positive', '@regression'],
   }, async ({ request }) => {
     const { token } = await registerAndGetToken(request);
-    const createRes = await createArticle(request, token, { tagList: ['initial'] });
-    const { article: created } = await createRes.json();
+    const created = await createArticle(request, token, { tagList: ['initial'] });
 
     const res = await request.put(`/api/articles/${created.slug}`, {
       headers: { Authorization: `Token ${token}` },
@@ -633,8 +608,7 @@ test.describe('Articles — Update', () => {
     const { token: authorToken } = await registerAndGetToken(request);
     const { token: otherToken } = await registerAndGetToken(request);
 
-    const createRes = await createArticle(request, authorToken);
-    const { article: created } = await createRes.json();
+    const created = await createArticle(request, authorToken);
 
     const res = await request.put(`/api/articles/${created.slug}`, {
       headers: { Authorization: `Token ${otherToken}` },
@@ -654,8 +628,7 @@ test.describe('Articles — Update', () => {
     tag: ['@articles', '@negative', '@smoke'],
   }, async ({ request }) => {
     const { token } = await registerAndGetToken(request);
-    const createRes = await createArticle(request, token);
-    const { article: created } = await createRes.json();
+    const created = await createArticle(request, token);
 
     const res = await request.put(`/api/articles/${created.slug}`, {
       data: { article: { description: 'No auth' } },
@@ -699,8 +672,7 @@ test.describe('Articles — Delete', () => {
     tag: ['@articles', '@positive', '@smoke'],
   }, async ({ request }) => {
     const { token } = await registerAndGetToken(request);
-    const createRes = await createArticle(request, token);
-    const { article: created } = await createRes.json();
+    const created = await createArticle(request, token);
 
     const res = await request.delete(`/api/articles/${created.slug}`, {
       headers: { Authorization: `Token ${token}` },
@@ -719,8 +691,7 @@ test.describe('Articles — Delete', () => {
     tag: ['@articles', '@negative', '@smoke'],
   }, async ({ request }) => {
     const { token } = await registerAndGetToken(request);
-    const createRes = await createArticle(request, token);
-    const { article: created } = await createRes.json();
+    const created = await createArticle(request, token);
 
     const res = await request.delete(`/api/articles/${created.slug}`);
 
@@ -739,8 +710,7 @@ test.describe('Articles — Delete', () => {
     const { token: authorToken } = await registerAndGetToken(request);
     const { token: otherToken } = await registerAndGetToken(request);
 
-    const createRes = await createArticle(request, authorToken);
-    const { article: created } = await createRes.json();
+    const created = await createArticle(request, authorToken);
 
     const res = await request.delete(`/api/articles/${created.slug}`, {
       headers: { Authorization: `Token ${otherToken}` },

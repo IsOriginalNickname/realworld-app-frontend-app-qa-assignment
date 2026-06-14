@@ -1,26 +1,7 @@
 import { test, expect } from '@playwright/test';
+import { registerAndGetToken } from './helpers';
 
 // Base URL: https://api.realworld.show/api  (openapi.json servers[0].url)
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function randomUser() {
-  const id = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-  return {
-    username: `user_${id}`,
-    email: `user_${id}@example.com`,
-    password: 'Password123!',
-  };
-}
-
-async function registerAndGetToken(request: any): Promise<{ token: string; username: string }> {
-  const user = randomUser();
-  const res = await request.post('/api/users', { data: { user } });
-  const body = await res.json();
-  return { token: body.user.token, username: body.user.username };
-}
 
 // ---------------------------------------------------------------------------
 // Profiles — GET /api/profiles/{username}
