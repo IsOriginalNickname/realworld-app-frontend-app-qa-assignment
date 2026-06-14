@@ -45,7 +45,7 @@ export default defineConfig({
       name: 'e2e',
       testDir: './tests/e2e',
       use: {
-        baseURL: 'http://localhost:3000',
+        baseURL: 'http://localhost:4200',
         ...devices['Desktop Chrome'],
       },
     },
