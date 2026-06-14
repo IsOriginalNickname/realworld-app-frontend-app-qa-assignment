@@ -1,27 +1,90 @@
 
-# Conduit — RealWorld Example App · Autotests 
+# Conduit — RealWorld Example App · Autotests
 
-Fork: https://github.com/TomislavVinkovic/realworld-app-angular-v20
-This codebase was created to demonstrate a fully fledged application built with Angular that interacts with an actual backend server including CRUD operations, authentication, routing, pagination, and more.
+This is a fork of: https://github.com/TomislavVinkovic/realworld-app-angular-v20
 
-For more information on how this works with other frontends/backends, head over to the [RealWorld repo](https://github.com/gothinkster/realworld).
+This fork was created to demonstrate working with AI tools and how this process can assist in a QA role.
 
 ---
 ## Q&A
 
-- [ ] TODO: Which agents/tools you used and how?
-  In this project was used: 
-  - Claude code as a main tool.
-  - Playwright Test Agents & Kiro for helping with test cases coverage.
-  - PostHook with code-grader for code quality assessment.
-- [ ] TODO: Where the agent helped, and where it produced something wrong or low-quality that you had to correct or reject.
-- В процессе вычитывания требований, у нас было два источника: Дока и JSON. В первую итерацию, claude code решил, что это одно и тоже, после чего успешно помержил требования, почти под чистую затерев .md файл со спекой. Однако на вторую итерацию, на просьбу разобраться, в чем же там всё таки разница, обнаружил, что некоторые вещи между opanAPI спеков и md спекой не совпадают вовсе. 
-- [ ] TODO: One example of a decision where you overrode the agent’s suggestion, and why.
+### Which agents/tools did you use and how?
+  - Claude for scraping requirements from the site.
+  - Claude Code as the main tool.
+  - Playwright Test Agents:
+    - planning
+    - codegen
+    - healing
+  - Kiro for helping with test case coverage.
+  - Self-written tools:
+    - PostHook for code quality assessment for API tests — runs the code-grader and mutation runner after each `.spec` file change.
+    - Self-written code-grader for static code quality assessment of API tests.
+    - Self-written mutation runner.
+
+### Where did the agent help, and where did it produce something wrong or low-quality that you had to correct or reject?
+  **Pros:**
+  -
+  **Cons:**
+  - By default, regular Claude Code codegen with some rules in the prompt produced poor results, and the Playwright agent wasn’t great either (both are more oriented toward UI tests). This was expected.
+  - **Solution:** A code-grader was added.
+
+### One example of a decision where you overrode the agent’s suggestion, and why.
+- When I asked it to generate fixtures for API tests, it moved all URLs inside them.
+- While extracting requirements, we had two sources: a Markdown spec and an OpenAPI JSON. On the first iteration, Claude Code decided they were identical and merged them, almost completely overwriting the `.md` spec file.
+- On the second iteration, when asked to identify the differences, it discovered that several things between the OpenAPI spec and the Markdown spec did not match at all.
+
+---
+### CodeGrader
+
+A static validator that runs automatically via **PostToolUse hook** every time a `.spec.ts` or `.test.ts` file is written. Non-test files are skipped silently.
+
+**How it works:** reads the file content and runs 8 regex-based checks. Exits `0` on full pass (`🟢 GRADER PASS`), exits `1` with a detailed failure report (`🔴 GRADER FAIL`) listing every broken check.
+
+**Checks:**
+
+- `has_url` — at least one HTTP URL must be present (taken from `openapi.json`, never invented)
+- `has_http_call` — a `request.get/post/put/delete/patch/head(...)` call must exist
+- `has_real_assert` — a meaningful assertion: `toBe`, `toEqual`, `toHaveProperty`, `toContain`, `toMatch`, etc. Forbidden: `expect(true)` or bare `toBeDefined()`
+- `has_status_assert` — explicit status code check: `expect(res.status()).toBe(NNN)`
+- `checks_immutable` — at least one check for a `readOnly` / immutable field (e.g. `created_at`, `.id`)
+- `has_tags` — `tag: ['@featureName', '@positive'|'@negative', ...]` with at least one named tag
+- `has_annotation_feature` — `annotation` entry with `type: 'feature'`
+- `has_annotation_type` — `annotation` entry with `type: 'type'` and `description: 'positive'|'negative'`
+
+**Goal:** `🟢 GRADER PASS` on all 8 checks, combined with `✅ Mutation score: 100%` from the mutation runner.
+
+---
+
+### MutationRunner
+
+A dynamic test-quality validator that runs automatically via **PostToolUse hook** right after the CodeGrader passes. Also skips non-test files.
+
+**How it works:** applies 6 code mutations to the spec file one at a time, runs Playwright against each mutant, then restores the original. A mutation is **killed** (good) if the test fails on it; it **survives** (bad) if the test still passes — meaning the assertion didn't catch the defect. Exits `1` if any mutation survives or the score drops below 90%.
+
+**Mutations:**
+
+- `status_code_off_by_one` — increments the expected status code by 1 (e.g. `201 → 202`)
+- `wrong_status_code` — replaces the expected status code with `999`
+- `null_payload` — replaces the request `data: {...}` with `data: null`
+- `broken_url` — appends `_MUTANT` to the first URL, making the request fail
+- `removed_assert` — comments out the first `expect(...)` call
+- `immutable_field_mutated` — replaces the expected value of a `readOnly` field with `'MUTANT_VALUE'`
+
+**Score:** `killed / (killed + survived) * 100`. Skipped mutations (pattern didn't match) are excluded from the score. Threshold: **≥ 90%** required to pass.
+
+**Goal:** `✅ Mutation score: 100%` — every applicable mutation must be caught by an assertion.
 
 ---
 
 
-In real life, I prefer spent some time for promt-evaluating with prepared a lot of demo data, for get the most reliable promt for generate test-suites for each endpoint.
+### What would I also like to do in the future?
+- First of all, deliver this project in Docker to make setup simpler and faster.
+- Run the backend locally in a container alongside the app. The publicly available API (`https://api.realworld.show/api`) has very low rate limits, which causes tests to fail and leads to flaky tests. As a temporary workaround, I reduced the number of workers and added retries — which is a bad practice.
+- In a real project, I would invest time in prompt evaluation with a large set of prepared demo data to find the most reliable prompt for generating test scenarios for each endpoint.
+- Create a Page Object Model for UI tests.
+- Separate the data layer for API tests and move all JSON payloads out of the test files.
+
+
 
 ## Prerequisites
 
@@ -82,8 +145,6 @@ export const environment = {
 ```
 
 Any backend that implements the [RealWorld API spec](https://realworld-docs.netlify.app/docs/specs/backend-specs/introduction) is compatible.
-
-
 
 
 
