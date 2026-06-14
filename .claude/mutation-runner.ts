@@ -1,7 +1,8 @@
 #!/usr/bin/env npx ts-node
 /**
- * mutation-runner.ts — проверяем что тесты живые
- * Применяем мутации к тесту → запускаем → если тест НЕ упал, он бесполезен
+ * mutation-runner.ts — verify that tests are alive
+ * Applies mutations to each test individually → runs only that test via --grep
+ * If the test does NOT fail, the mutation survived — the test is useless
  */
 
 import { readFileSync, writeFileSync } from "fs";
@@ -33,7 +34,7 @@ interface Mutation {
 const MUTATIONS: Mutation[] = [
   {
     name: "status_code_off_by_one",
-    description: "Статус-код ±1 (201→202, 200→201)",
+    description: "Status code ±1 (201→202, 200→201)",
     apply: (code) =>
       code.replace(
         /expect\(res\.status\(\)\)\.toBe\((\d+)\)/,
@@ -42,7 +43,7 @@ const MUTATIONS: Mutation[] = [
   },
   {
     name: "wrong_status_code",
-    description: "Статус-код заменён на 999",
+    description: "Status code replaced with 999",
     apply: (code) =>
       code.replace(
         /expect\(res\.status\(\)\)\.toBe\(\d+\)/,
@@ -51,7 +52,7 @@ const MUTATIONS: Mutation[] = [
   },
   {
     name: "null_payload",
-    description: "Payload заменён на null",
+    description: "Payload replaced with null",
     apply: (code) =>
       code.replace(
         /data:\s*\{[^}]+\}/,
@@ -60,7 +61,7 @@ const MUTATIONS: Mutation[] = [
   },
   {
     name: "broken_url",
-    description: "URL сломан (_MUTANT суффикс)",
+    description: "URL broken (_MUTANT suffix)",
     apply: (code) =>
       code.replace(
         /(https?:\/\/[^\s"'`]+)/,
@@ -69,7 +70,7 @@ const MUTATIONS: Mutation[] = [
   },
   {
     name: "removed_assert",
-    description: "Первый expect() закомментирован",
+    description: "First expect() commented out",
     apply: (code) =>
       code.replace(
         /(\s+)(expect\(.+\)\.\w+\(.+\);)/,
@@ -78,7 +79,7 @@ const MUTATIONS: Mutation[] = [
   },
   {
     name: "immutable_field_mutated",
-    description: "Значение immutable поля изменено на 'MUTANT_VALUE'",
+    description: "Immutable field value changed to 'MUTANT_VALUE'",
     apply: (code) =>
       code.replace(
         /(created_at|readOnly\w*|\.id)\)\.toBe\(['"`][^'"`]+['"`]\)/,
@@ -87,69 +88,131 @@ const MUTATIONS: Mutation[] = [
   },
 ];
 
-function runTest(file: string): boolean {
+interface TestBlock {
+  name: string;
+  body: string;
+  start: number;
+  end: number;
+}
+
+function extractTestBlocks(source: string): TestBlock[] {
+  const blocks: TestBlock[] = [];
+  const testRegex = /\btest\s*\(/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = testRegex.exec(source)) !== null) {
+    const blockStart = match.index;
+    const afterKeyword = source.slice(match.index + match[0].length);
+    const nameMatch = afterKeyword.match(/^['"]([^'"\\]*(?:\\.[^'"\\]*)*)['"]/);
+    if (!nameMatch) continue;
+    const name = nameMatch[1];
+
+    let depth = 1;
+    let i = match.index + match[0].length;
+    while (i < source.length && depth > 0) {
+      const ch = source[i];
+      if (ch === '"' || ch === "'" || ch === '`') {
+        const q = ch;
+        i++;
+        while (i < source.length && source[i] !== q) {
+          if (source[i] === '\\') i++;
+          i++;
+        }
+        i++;
+      } else if (ch === '(') {
+        depth++;
+        i++;
+      } else if (ch === ')') {
+        depth--;
+        i++;
+      } else {
+        i++;
+      }
+    }
+
+    blocks.push({ name, body: source.slice(blockStart, i), start: blockStart, end: i });
+  }
+
+  return blocks;
+}
+
+function runTest(file: string, testName: string): boolean {
   try {
+    const escaped = testName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     execSync(
-      `npx playwright test "${file}" --reporter=dot 2>&1`,
+      `npx playwright test "${file}" --grep "${escaped}" --reporter=dot 2>&1`,
       { stdio: "pipe", timeout: 30000 }
     );
-    return false; // тест прошёл — плохо (мутация выжила)
+    return false; // test passed — bad (mutation survived)
   } catch {
-    return true; // тест упал — хорошо (мутация убита)
+    return true; // test failed — good (mutation killed)
   }
 }
 
 console.log(`\n${BOLD}🧬 Mutation Testing${RESET}: ${filename}\n`);
 
-const killed: string[] = [];
-const survived: string[] = [];
-const skipped: string[] = [];
+const blocks = extractTestBlocks(original);
 
-for (const mutation of MUTATIONS) {
-  const mutated = mutation.apply(original);
-
-  if (mutated === original) {
-    skipped.push(mutation.name);
-    console.log(`  ${DIM}⊘ SKIP    ${mutation.name}: мутация не применилась${RESET}`);
-    continue;
-  }
-
-  // Записываем мутанта
-  writeFileSync(filepath, mutated, "utf-8");
-
-  const testFailed = runTest(filepath);
-
-  if (testFailed) {
-    killed.push(mutation.name);
-    console.log(`  ${GREEN}✅ KILLED  ${RESET}${mutation.name}: ${DIM}${mutation.description}${RESET}`);
-  } else {
-    survived.push(mutation.name);
-    console.log(`  ${RED}❌ SURVIVED${RESET} ${BOLD}${mutation.name}${RESET}: ${mutation.description}`);
-    console.log(`     ${YELLOW}→ Тест не поймал эту мутацию — усиль assert${RESET}`);
-  }
-
-  // Восстанавливаем оригинал
-  writeFileSync(filepath, original, "utf-8");
+if (blocks.length === 0) {
+  console.log(`${YELLOW}No test() blocks found — skipping${RESET}\n`);
+  process.exit(0);
 }
 
-// Итог
-const total = killed.length + survived.length;
-const score = total > 0 ? Math.round((killed.length / total) * 100) : 100;
+const killedAll: string[] = [];
+const survivedAll: string[] = [];
+const skippedAll: string[] = [];
+
+for (const block of blocks) {
+  console.log(`\n${BOLD}Test:${RESET} "${block.name}"`);
+
+  for (const mutation of MUTATIONS) {
+    const mutatedBody = mutation.apply(block.body);
+
+    if (mutatedBody === block.body) {
+      skippedAll.push(`${block.name}::${mutation.name}`);
+      console.log(`  ${DIM}⊘ SKIP    ${mutation.name}: mutation didn't apply${RESET}`);
+      continue;
+    }
+
+    // Splice mutated block back into the full file, keeping everything else intact
+    const mutatedFile =
+      original.slice(0, block.start) + mutatedBody + original.slice(block.end);
+    writeFileSync(filepath, mutatedFile, "utf-8");
+
+    const killed = runTest(filepath, block.name);
+
+    if (killed) {
+      killedAll.push(`${block.name}::${mutation.name}`);
+      console.log(`  ${GREEN}✅ KILLED  ${RESET}${mutation.name}: ${DIM}${mutation.description}${RESET}`);
+    } else {
+      survivedAll.push(`${block.name}::${mutation.name}`);
+      console.log(`  ${RED}❌ SURVIVED${RESET} ${BOLD}${mutation.name}${RESET}: ${mutation.description}`);
+      console.log(`     ${YELLOW}→ Test didn't catch this mutation — strengthen the assert${RESET}`);
+    }
+
+    // Always restore original before next iteration
+    writeFileSync(filepath, original, "utf-8");
+  }
+}
+
+const total = killedAll.length + survivedAll.length;
+const score = total > 0 ? Math.round((killedAll.length / total) * 100) : 100;
 
 console.log(`\n${"─".repeat(50)}`);
 console.log(`${BOLD}Mutation score: ${score >= 90 ? GREEN : RED}${score}%${RESET}`);
-console.log(`  Killed:   ${GREEN}${killed.length}${RESET}`);
-console.log(`  Survived: ${RED}${survived.length}${RESET}`);
-console.log(`  Skipped:  ${DIM}${skipped.length}${RESET}`);
+console.log(`  Killed:   ${GREEN}${killedAll.length}${RESET}`);
+console.log(`  Survived: ${RED}${survivedAll.length}${RESET}`);
+console.log(`  Skipped:  ${DIM}${skippedAll.length}${RESET}`);
 
-if (survived.length > 0) {
-  console.log(`\n${RED}${BOLD}MUTATION FAIL${RESET}: ${survived.length} мутаций выжило`);
-  console.log(`${YELLOW}Усиль assertions для: ${survived.join(", ")}${RESET}\n`);
+if (survivedAll.length > 0) {
+  console.log(`\n${RED}${BOLD}MUTATION FAIL${RESET}: ${survivedAll.length} mutation(s) survived`);
+  const mutations = [...new Set(survivedAll.map(s => s.split("::")[1]))];
+  console.log(`${YELLOW}Strengthen assertions for: ${mutations.join(", ")}${RESET}\n`);
   process.exit(1);
 }
 
 if (score < 90) {
-  console.log(`\n${YELLOW}⚠ Score ниже 90% — нужно больше проверок${RESET}\n`);
+  console.log(`\n${YELLOW}⚠ Score below 90% — add more checks${RESET}\n`);
   process.exit(1);
 }
 

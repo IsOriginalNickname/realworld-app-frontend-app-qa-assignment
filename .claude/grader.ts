@@ -14,7 +14,6 @@ if (!filepath) {
   process.exit(1);
 }
 
-// Skip non-test files
 if (!filepath.includes(".spec.ts") && !filepath.includes(".test.ts")) {
   process.exit(0);
 }
@@ -22,13 +21,20 @@ if (!filepath.includes(".spec.ts") && !filepath.includes(".test.ts")) {
 const code = readFileSync(filepath, "utf-8");
 const filename = path.basename(filepath);
 
+const RESET  = "\x1b[0m";
+const RED    = "\x1b[31m";
+const GREEN  = "\x1b[32m";
+const YELLOW = "\x1b[33m";
+const BOLD   = "\x1b[1m";
+
 interface Check {
   name: string;
   pattern: RegExp;
   message: string;
 }
 
-const checks: Check[] = [
+// Applied to each test() block individually
+const perTestChecks: Check[] = [
   {
     name: "has_url",
     pattern: /https?:\/\/[^\s"'`]+/,
@@ -50,11 +56,6 @@ const checks: Check[] = [
     message: "No status code check: expect(res.status()).toBe(NNN)",
   },
   {
-    name: "checks_immutable",
-    pattern: /readOnly|immutable|created_at|\.id\)\.toBe\(|cannot.*change|readonly/i,
-    message: "No immutable/readOnly field check from openapi.json",
-  },
-  {
     name: "has_tags",
     pattern: /tag:\s*\[[\s\S]*?@\w+[\s\S]*?\]/,
     message: "No tags — minimum required: [@featureName, @positive/@negative]",
@@ -71,24 +72,97 @@ const checks: Check[] = [
   },
 ];
 
-const failed = checks.filter(c => !c.pattern.test(code));
+// Applied once across the entire file
+const fileChecks: Check[] = [
+  {
+    name: "checks_immutable",
+    pattern: /readOnly|immutable|created_at|\.id\)\.toBe\(|cannot.*change|readonly/i,
+    message: "No immutable/readOnly field check from openapi.json (required at least once per file)",
+  },
+];
 
-const RESET  = "\x1b[0m";
-const RED    = "\x1b[31m";
-const GREEN  = "\x1b[32m";
-const YELLOW = "\x1b[33m";
-const BOLD   = "\x1b[1m";
+interface TestBlock {
+  name: string;
+  body: string;
+}
 
-if (failed.length > 0) {
-  console.error(`\n${RED}${BOLD}🔴 GRADER FAIL${RESET}: ${filename}`);
-  console.error(`${YELLOW}Issues found: ${failed.length}/${checks.length}${RESET}\n`);
-  failed.forEach(c => {
+function extractTestBlocks(source: string): TestBlock[] {
+  const blocks: TestBlock[] = [];
+  const testRegex = /\btest\s*\(/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = testRegex.exec(source)) !== null) {
+    const blockStart = match.index;
+    const afterKeyword = source.slice(match.index + match[0].length);
+    const nameMatch = afterKeyword.match(/^['"]([^'"\\]*(?:\\.[^'"\\]*)*)['"]/);
+    if (!nameMatch) continue;
+    const name = nameMatch[1];
+
+    // Walk forward tracking paren depth, skipping string literals
+    let depth = 1;
+    let i = match.index + match[0].length;
+    while (i < source.length && depth > 0) {
+      const ch = source[i];
+      if (ch === '"' || ch === "'" || ch === '`') {
+        const q = ch;
+        i++;
+        while (i < source.length && source[i] !== q) {
+          if (source[i] === '\\') i++;
+          i++;
+        }
+        i++;
+      } else if (ch === '(') {
+        depth++;
+        i++;
+      } else if (ch === ')') {
+        depth--;
+        i++;
+      } else {
+        i++;
+      }
+    }
+
+    blocks.push({ name, body: source.slice(blockStart, i) });
+  }
+
+  return blocks;
+}
+
+const blocks = extractTestBlocks(code);
+
+if (blocks.length === 0) {
+  console.error(`\n${YELLOW}⚠ No test() blocks found in ${filename}${RESET}\n`);
+  process.exit(1);
+}
+
+let totalFailed = 0;
+
+for (const block of blocks) {
+  const failed = perTestChecks.filter(c => !c.pattern.test(block.body));
+  if (failed.length > 0) {
+    totalFailed += failed.length;
+    console.error(`\n${RED}${BOLD}✗ Test:${RESET} "${block.name}"`);
+    failed.forEach(c => {
+      console.error(`  ${RED}✗${RESET} ${BOLD}${c.name}${RESET}: ${c.message}`);
+    });
+  }
+}
+
+const fileFailedChecks = fileChecks.filter(c => !c.pattern.test(code));
+if (fileFailedChecks.length > 0) {
+  totalFailed += fileFailedChecks.length;
+  console.error(`\n${RED}${BOLD}✗ File-level checks:${RESET}`);
+  fileFailedChecks.forEach(c => {
     console.error(`  ${RED}✗${RESET} ${BOLD}${c.name}${RESET}: ${c.message}`);
   });
-  console.error(`\n${YELLOW}→ Fix all issues and rewrite the file in full${RESET}\n`);
+}
+
+if (totalFailed > 0) {
+  console.error(`\n${RED}${BOLD}🔴 GRADER FAIL${RESET}: ${filename}`);
+  console.error(`${YELLOW}Issues found across ${blocks.length} test(s) — fix all and rewrite the file in full${RESET}\n`);
   process.exit(1);
 } else {
   console.log(`\n${GREEN}${BOLD}🟢 GRADER PASS${RESET}: ${filename}`);
-  console.log(`${GREEN}   All ${checks.length} checks passed${RESET}\n`);
+  console.log(`${GREEN}   All checks passed across ${blocks.length} test(s)${RESET}\n`);
   process.exit(0);
 }
